@@ -484,6 +484,77 @@ describe('inbound-handler', () => {
         expect(String(shared.sendBySessionMock.mock.calls[0]?.[2])).toContain('主动推送可能失败');
     });
 
+    it('group allowlist with composite entry allows matching sender', async () => {
+        await handleDingTalkMessage({
+            cfg: {},
+            accountId: 'main',
+            sessionWebhook: 'https://session.webhook',
+            log: undefined,
+            dingtalkConfig: { groupPolicy: 'allowlist', allowFrom: ['cid_group:user_ok'] } as any,
+            data: {
+                msgId: 'm_composite_ok',
+                msgtype: 'text',
+                text: { content: 'hello' },
+                conversationType: '2',
+                conversationId: 'cid_group',
+                senderId: 'user_ok',
+                chatbotUserId: 'bot_1',
+                sessionWebhook: 'https://session.webhook',
+                createAt: Date.now(),
+            },
+        } as any);
+
+        // No deny message sent — message was allowed through
+        expect(shared.sendBySessionMock).not.toHaveBeenCalled();
+    });
+
+    it('group allowlist with composite entry blocks non-matching sender', async () => {
+        await handleDingTalkMessage({
+            cfg: {},
+            accountId: 'main',
+            sessionWebhook: 'https://session.webhook',
+            log: undefined,
+            dingtalkConfig: { groupPolicy: 'allowlist', allowFrom: ['cid_group:user_ok'] } as any,
+            data: {
+                msgId: 'm_composite_blocked',
+                msgtype: 'text',
+                text: { content: 'hello' },
+                conversationType: '2',
+                conversationId: 'cid_group',
+                senderId: 'user_blocked',
+                chatbotUserId: 'bot_1',
+                sessionWebhook: 'https://session.webhook',
+                createAt: Date.now(),
+            },
+        } as any);
+
+        expect(shared.sendBySessionMock).toHaveBeenCalledTimes(1);
+        expect(shared.sendBySessionMock.mock.calls[0]?.[2]).toContain('访问受限');
+    });
+
+    it('group allowlist with *:user_ok allows that sender in any group', async () => {
+        await handleDingTalkMessage({
+            cfg: {},
+            accountId: 'main',
+            sessionWebhook: 'https://session.webhook',
+            log: undefined,
+            dingtalkConfig: { groupPolicy: 'allowlist', allowFrom: ['*:user_ok'] } as any,
+            data: {
+                msgId: 'm_wildcard_group',
+                msgtype: 'text',
+                text: { content: 'hello' },
+                conversationType: '2',
+                conversationId: 'cid_any_group',
+                senderId: 'user_ok',
+                chatbotUserId: 'bot_1',
+                sessionWebhook: 'https://session.webhook',
+                createAt: Date.now(),
+            },
+        } as any);
+
+        expect(shared.sendBySessionMock).not.toHaveBeenCalled();
+    });
+
     it('sends proactive permission hint only once within cooldown window', async () => {
         shared.sendBySessionMock.mockResolvedValue(undefined);
 

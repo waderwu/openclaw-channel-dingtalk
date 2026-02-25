@@ -275,7 +275,7 @@ export async function handleDingTalkMessage(params: HandleDingTalkMessageParams)
 
     if (groupPolicy === "allowlist") {
       const normalizedAllowFrom = normalizeAllowFrom(allowFrom);
-      const isAllowed = isSenderGroupAllowed({ allow: normalizedAllowFrom, groupId });
+      const isAllowed = isSenderGroupAllowed({ allow: normalizedAllowFrom, groupId, senderId });
 
       if (!isAllowed) {
         log?.debug?.(
