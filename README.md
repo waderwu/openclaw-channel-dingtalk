@@ -255,7 +255,7 @@ openclaw gateway restart
 | `agentId`               | string   | -            | 应用 ID                                     |
 | `dmPolicy`              | string   | `"open"`     | 私聊策略：open/pairing/allowlist            |
 | `groupPolicy`           | string   | `"open"`     | 群聊策略：open/allowlist                    |
-| `allowFrom`             | string[] | `[]`         | 允许的发送者 ID 列表                        |
+| `allowFrom`             | string[] | `[]`         | 允许列表，支持复合格式（见下文）            |
 | `messageType`           | string   | `"markdown"` | 消息类型：markdown/card                     |
 | `cardTemplateId`        | string   |              | AI 互动卡片模板 ID（仅当 messageType=card） |
 | `cardTemplateKey`       | string   | `"content"`  | 卡片模板内容字段键（仅当 messageType=card） |
@@ -286,12 +286,63 @@ openclaw gateway restart
 
 - `open` — 任何人都可以私聊机器人
 - `pairing` — 新用户需要通过配对码验证
-- `allowlist` — 只有 allowFrom 列表中的用户可以使用
+- `allowlist` — 只有 `allowFrom` 列表中的用户可以使用
 
 ### 群聊策略 (groupPolicy)
 
 - `open` — 任何群都可以 @机器人
-- `allowlist` — 只有配置的群可以使用
+- `allowlist` — 只有 `allowFrom` 列表中匹配的群/用户可以使用
+
+### allowFrom 配置格式
+
+`allowFrom` 是一个字符串数组，在私聊 (`dmPolicy: "allowlist"`) 和群聊 (`groupPolicy: "allowlist"`) 策略下共用。群聊场景支持 `groupId:senderId` 复合格式和 `*` 通配符，可以精确控制哪个群的哪个用户能触发机器人。
+
+#### 支持的格式
+
+| allowFrom 条目        | 含义                                       |
+| --------------------- | ------------------------------------------ |
+| `*`                   | 全局通配 — 任意群、任意人                  |
+| `cidABC`              | cidABC 群的所有人（向后兼容纯群 ID 写法）  |
+| `cidABC:user1`        | cidABC 群中仅 user1 可以触发               |
+| `cidABC:*`            | cidABC 群的所有人（等价于纯 `cidABC`）     |
+| `*:user1`             | 任意群中的 user1 都可以触发                |
+
+> **说明：**
+> - 匹配时**不区分大小写**，`CidABC:User1` 与 `cidabc:user1` 等价。
+> - 支持 `dingtalk:`、`dd:`、`ding:` 前缀自动剥离，例如 `dingtalk:cidABC:user1` 会先去掉 `dingtalk:` 前缀再解析。
+> - 私聊策略下 `allowFrom` 仍按发送者 ID 直接匹配（不使用复合格式），两种策略互不影响。
+
+#### 配置示例
+
+**场景 1：只允许特定群的特定用户**
+
+```json5
+{
+  "groupPolicy": "allowlist",
+  "allowFrom": ["cidXXXXXX:manager001", "cidXXXXXX:manager002"]
+}
+```
+
+**场景 2：允许特定群的所有人 + 任意群中的管理员**
+
+```json5
+{
+  "groupPolicy": "allowlist",
+  "allowFrom": ["cidXXXXXX", "*:admin001"]
+}
+```
+
+**场景 3：同时配置私聊和群聊白名单**
+
+```json5
+{
+  "dmPolicy": "allowlist",
+  "groupPolicy": "allowlist",
+  "allowFrom": ["user_a", "user_b", "cidGroupA:user_c", "*:user_d"]
+}
+```
+
+> 上述配置中，`user_a` 和 `user_b` 用于私聊白名单匹配；`cidGroupA:user_c` 表示仅 user_c 可在 cidGroupA 群触发；`*:user_d` 表示 user_d 可在任意群触发。
 
 ## 消息类型支持
 
