@@ -286,7 +286,7 @@ export async function handleDingTalkMessage(params: HandleDingTalkMessageParams)
           await sendBySession(
             dingtalkConfig,
             sessionWebhook,
-            `⛔ 访问受限\n\n您的群聊ID：\`${groupId}\`\n\n请联系管理员将此ID添加到允许列表中。`,
+            `⛔ 访问受限\n\n您的群聊ID：\`${groupId}\`\n您的用户ID：\`${senderId}\`\n\n请联系管理员将此ID添加到允许列表中。`,
             { log, atUserId: senderId },
           );
         } catch (err: any) {

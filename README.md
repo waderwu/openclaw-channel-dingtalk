@@ -344,6 +344,31 @@ openclaw gateway restart
 
 > 上述配置中，`user_a` 和 `user_b` 用于私聊白名单匹配；`cidGroupA:user_c` 表示仅 user_c 可在 cidGroupA 群触发；`*:user_d` 表示 user_d 可在任意群触发。
 
+#### 如何获取 senderId 和 groupId
+
+最简单的方法是先将策略设置为 `allowlist` 并留空 `allowFrom`，然后向机器人发送一条消息。机器人会回复一条**访问受限**提示，其中包含你需要的 ID：
+
+- **私聊**：回复中会显示 `您的用户ID：xxx`
+- **群聊**：回复中会显示 `您的群聊ID：xxx` 和 `您的用户ID：xxx`
+
+将这些 ID 复制到 `allowFrom` 配置中即可。
+
+```json5
+// 第一步：先用空 allowFrom 触发拒绝消息获取 ID
+{ "groupPolicy": "allowlist", "allowFrom": [] }
+
+// 第二步：从拒绝消息中复制 ID，填入配置
+{ "groupPolicy": "allowlist", "allowFrom": ["cidXXXXXX:userYYYYYY"] }
+```
+
+你也可以通过查看 Gateway 日志获取更详细的信息：
+
+```bash
+openclaw logs | grep "\[DingTalk\]"
+```
+
+日志中会输出 `senderId=xxx`、`conversationId=xxx` 等调试信息。
+
 ## 消息类型支持
 
 ### 接收
